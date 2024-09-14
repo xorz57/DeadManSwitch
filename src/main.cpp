@@ -3,35 +3,35 @@
 #include <event2/buffer.h>
 
 #ifdef _WIN32
-    #include <winsock2.h>
-    #pragma comment(lib, "ws2_32.lib")
+#include <winsock2.h>
+#pragma comment(lib, "ws2_32.lib")
 #endif
 
 #include <iostream>
 #include <cstdlib>
 
-static event* timer_event = nullptr;
+static event *timer_event = nullptr;
 
-void reset_timer(event_base* base);
+void reset_timer(event_base *base);
 
-void timeout_cb(evutil_socket_t fd, short events, void* arg) {
+void timeout_cb(evutil_socket_t fd, short events, void *arg) {
     std::cerr << "Dead man's switch triggered!\n";
     exit(EXIT_SUCCESS);
 }
 
-void http_root_handler(evhttp_request* req, void* arg) {
-    auto* base = static_cast<struct event_base*>(arg);
+void http_root_handler(evhttp_request *req, void *arg) {
+    auto *base = static_cast<struct event_base *>(arg);
 
     std::cout << "Resetting the timer!\n";
     reset_timer(base);
 
-    evbuffer* response_buffer = evbuffer_new();
+    evbuffer *response_buffer = evbuffer_new();
     evbuffer_add_printf(response_buffer, "Resetting the timer!\n");
     evhttp_send_reply(req, HTTP_OK, "OK", response_buffer);
     evbuffer_free(response_buffer);
 }
 
-void reset_timer(event_base* base) {
+void reset_timer(event_base *base) {
     if (timer_event != nullptr) {
         evtimer_del(timer_event);
     }
@@ -49,7 +49,7 @@ int main() {
     }
 #endif
 
-    event_base* base = event_base_new();
+    event_base *base = event_base_new();
     if (!base) {
 #ifdef _WIN32
         WSACleanup();
@@ -57,7 +57,7 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    evhttp* http_server = evhttp_new(base);
+    evhttp *http_server = evhttp_new(base);
     if (!http_server) {
         event_base_free(base);
 #ifdef _WIN32
