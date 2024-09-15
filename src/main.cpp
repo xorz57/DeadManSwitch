@@ -17,7 +17,6 @@ void shutdown(event_base *base);
 
 void timeout_cb(evutil_socket_t fd, short events, void *arg) {
     std::cerr << "Dead man's switch triggered!\n";
-    exit(EXIT_SUCCESS);
 }
 
 void http_reset_handler(evhttp_request *req, void *arg) {
