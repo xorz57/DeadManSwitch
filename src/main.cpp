@@ -1,6 +1,5 @@
 #include <event2/event.h>
 #include <event2/http.h>
-#include <event2/buffer.h>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -12,7 +11,9 @@
 
 static event *timer_event = nullptr;
 
-void reset_timer(event_base *base);
+void reset(event_base *base);
+
+void shutdown(event_base *base);
 
 void timeout_cb(evutil_socket_t fd, short events, void *arg) {
     std::cerr << "Dead man's switch triggered!\n";
@@ -22,26 +23,20 @@ void timeout_cb(evutil_socket_t fd, short events, void *arg) {
 void http_reset_handler(evhttp_request *req, void *arg) {
     auto *base = static_cast<struct event_base *>(arg);
 
-    std::cout << "Resetting!\n";
-    reset_timer(base);
+    evhttp_send_reply(req, HTTP_OK, "OK", nullptr);
 
-    evbuffer *response_buffer = evbuffer_new();
-    evbuffer_add_printf(response_buffer, "Resetting!\n");
-    evhttp_send_reply(req, HTTP_OK, "OK", response_buffer);
-    evbuffer_free(response_buffer);
+    reset(base);
 }
 
 void http_shutdown_handler(evhttp_request *req, void *arg) {
     auto *base = static_cast<struct event_base *>(arg);
 
-    std::cout << "Shutting down!\n";
+    evhttp_send_reply(req, HTTP_OK, "OK", nullptr);
 
-    evhttp_send_reply(req, HTTP_OK, "Shutting down!", nullptr);
-
-    event_base_loopbreak(base);
+    shutdown(base);
 }
 
-void reset_timer(event_base *base) {
+void reset(event_base *base) {
     if (timer_event != nullptr) {
         evtimer_del(timer_event);
     }
@@ -49,6 +44,10 @@ void reset_timer(event_base *base) {
     constexpr timeval timeout = {30, 0};
     timer_event = evtimer_new(base, timeout_cb, nullptr);
     evtimer_add(timer_event, &timeout);
+}
+
+void shutdown(event_base *base) {
+    event_base_loopbreak(base);
 }
 
 int main() {
@@ -88,8 +87,7 @@ int main() {
     evhttp_set_cb(http_server, "/reset", http_reset_handler, base);
     evhttp_set_cb(http_server, "/shutdown", http_shutdown_handler, base);
 
-    std::cout << "Resetting!\n";
-    reset_timer(base);
+    reset(base);
 
     event_base_dispatch(base);
 
