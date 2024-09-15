@@ -98,6 +98,5 @@ int main() {
 #ifdef _WIN32
     WSACleanup();
 #endif
-
     return EXIT_SUCCESS;
 }
