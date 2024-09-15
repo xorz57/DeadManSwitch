@@ -19,16 +19,26 @@ void timeout_cb(evutil_socket_t fd, short events, void *arg) {
     exit(EXIT_SUCCESS);
 }
 
-void http_root_handler(evhttp_request *req, void *arg) {
+void http_reset_handler(evhttp_request *req, void *arg) {
     auto *base = static_cast<struct event_base *>(arg);
 
-    std::cout << "Resetting the timer!\n";
+    std::cout << "Resetting!\n";
     reset_timer(base);
 
     evbuffer *response_buffer = evbuffer_new();
-    evbuffer_add_printf(response_buffer, "Resetting the timer!\n");
+    evbuffer_add_printf(response_buffer, "Resetting!\n");
     evhttp_send_reply(req, HTTP_OK, "OK", response_buffer);
     evbuffer_free(response_buffer);
+}
+
+void http_shutdown_handler(evhttp_request *req, void *arg) {
+    auto *base = static_cast<struct event_base *>(arg);
+
+    std::cout << "Shutting down!\n";
+
+    evhttp_send_reply(req, HTTP_OK, "Shutting down!", nullptr);
+
+    event_base_loopbreak(base);
 }
 
 void reset_timer(event_base *base) {
@@ -75,9 +85,10 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    evhttp_set_cb(http_server, "/", http_root_handler, base);
+    evhttp_set_cb(http_server, "/reset", http_reset_handler, base);
+    evhttp_set_cb(http_server, "/shutdown", http_shutdown_handler, base);
 
-    std::cout << "Resetting the timer!\n";
+    std::cout << "Resetting!\n";
     reset_timer(base);
 
     event_base_dispatch(base);
